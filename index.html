@@ -1,0 +1,478 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Entre Duas Estrelas</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Manrope:wght@400;500;700&display=swap">
+<style>
+/* Layout: céu noturno em tela cheia. Duas estrelas no alto se aproximam a cada passo; o texto fica na metade de baixo, alinhado à esquerda. */
+:root {
+  --bg: #0b1020;
+  --bg2: #17163a;
+  --ink: #eef0ff;
+  --muted: #a9b0d4;
+  --rose: #ffb4c2;
+  --gold: #ffe0a0;
+  --line: rgba(255, 255, 255, 0.16);
+  --panel: rgba(14, 18, 42, 0.62);
+  --font-display: "Instrument Serif", Georgia, "Times New Roman", serif;
+  --font-body: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  background: linear-gradient(180deg, var(--bg) 0%, var(--bg2) 100%);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 17px;
+  line-height: 1.55;
+  padding-block: 0;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  overflow-x: hidden;
+}
+#sky { position: fixed; inset: 0; width: 100%; height: 100%; display: block; z-index: 0; }
+.stage {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  max-width: 40rem;
+  margin: 0 auto;
+  padding-block: 1rem 1.5rem;
+}
+.progress {
+  position: fixed;
+  left: max(16px, env(safe-area-inset-left, 0px));
+  right: max(16px, env(safe-area-inset-right, 0px));
+  top: 12px;
+  height: 2px;
+  background: var(--line);
+  z-index: 2;
+}
+.progress i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--rose), var(--gold)); transition: width 0.9s ease; }
+.mute {
+  position: fixed;
+  right: max(16px, env(safe-area-inset-right, 0px));
+  top: 24px;
+  z-index: 3;
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  border-radius: 999px;
+  font: 500 0.78rem var(--font-body);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.4rem 0.8rem;
+  cursor: pointer;
+}
+.km {
+  position: fixed;
+  left: max(16px, env(safe-area-inset-left, 0px));
+  top: 26px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+.km b { font-family: var(--font-display); font-weight: 400; font-size: 1.9rem; color: var(--gold); font-variant-numeric: tabular-nums; }
+.km span { font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 1.5rem 1.4rem 1.4rem;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  animation: rise 0.8s ease both;
+  max-height: 64vh;
+  overflow-y: auto;
+}
+@keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+.kicker { margin: 0 0 0.5rem; font-size: 0.78rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--rose); font-weight: 700; }
+h1 {
+  margin: 0 0 0.7rem;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(2rem, 7.5vw, 3.1rem);
+  line-height: 1.05;
+  text-wrap: balance;
+}
+h1 em { color: var(--gold); font-style: italic; }
+p { margin: 0 0 1rem; color: var(--muted); max-width: 34rem; }
+.row { display: flex; flex-wrap: wrap; gap: 0.7rem; margin-top: 0.4rem; }
+button.btn {
+  font: 700 1rem var(--font-body);
+  min-height: 48px;
+  padding: 0.7rem 1.4rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  flex: 1 1 12rem;
+}
+button.btn.primary { background: linear-gradient(135deg, var(--rose), var(--gold)); color: #1b1630; border-color: transparent; }
+button.btn:hover { filter: brightness(1.1); }
+button:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
+.promises { list-style: none; margin: 0 0 1rem; padding: 0; display: grid; gap: 0.55rem; }
+.promises button {
+  width: 100%;
+  text-align: left;
+  display: flex;
+  gap: 0.8rem;
+  align-items: flex-start;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  color: var(--ink);
+  font: 500 0.98rem/1.4 var(--font-body);
+  padding: 0.8rem 0.9rem;
+  cursor: pointer;
+}
+.promises .box {
+  flex: none;
+  width: 1.4rem; height: 1.4rem;
+  border-radius: 50%;
+  border: 1.5px solid var(--muted);
+  display: grid; place-items: center;
+  font-size: 0.8rem; color: transparent;
+  margin-top: 0.05rem;
+}
+.promises button[aria-pressed="true"] { border-color: var(--gold); background: rgba(255, 224, 160, 0.08); }
+.promises button[aria-pressed="true"] .box { background: var(--gold); border-color: var(--gold); color: #1b1630; }
+.sig { font-family: var(--font-display); font-style: italic; font-size: 1.4rem; color: var(--gold); margin: 0.6rem 0 0; }
+.toast { font-size: 0.85rem; color: var(--muted); margin: 0.6rem 0 0; min-height: 1.2em; }
+@media (prefers-reduced-motion: reduce) { .card { animation: none; } .progress i { transition: none; } }
+</style>
+
+</head>
+<body>
+<canvas id="sky" aria-hidden="true"></canvas>
+<div class="progress" aria-hidden="true"><i id="bar"></i></div>
+<div class="km" aria-hidden="true"><b id="km">175 km</b><span>em linha reta</span></div>
+<button class="mute" id="mute" type="button" aria-pressed="false">Som ligado</button>
+<main class="stage"><div class="card" id="card" aria-live="polite"></div></main>
+
+<script>
+/* ===== Personalização: preencha e republique ===== */
+var CONFIG = { ela: "Maria Larissa", eu: "Guilherme", km: 175 };
+
+var sky = document.getElementById("sky");
+var ctx = sky.getContext("2d");
+var card = document.getElementById("card");
+var kmEl = document.getElementById("km");
+var bar = document.getElementById("bar");
+var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+var W = 0, H = 0, DPR = 1;
+var stars = [], bursts = [], shooters = [];
+var step = 0, p = 0, targetP = 0, finalYes = false;
+var audio = null, muted = false;
+
+var TARGETS = [0, 0.15, 0.3, 0.45, 0.6, 0.8, 1];
+
+function resize() {
+  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  W = window.innerWidth; H = window.innerHeight;
+  sky.width = W * DPR; sky.height = H * DPR;
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  stars = [];
+  var n = Math.round((W * H) / 5200);
+  for (var i = 0; i < n; i++) {
+    stars.push({ x: Math.random() * W, y: Math.random() * H, r: Math.random() * 1.3 + 0.2, t: Math.random() * 6.28, s: Math.random() * 0.02 + 0.005 });
+  }
+}
+window.addEventListener("resize", resize);
+resize();
+
+function lerp(a, b, t) { return a + (b - a) * t; }
+
+function glow(x, y, r, color, alpha) {
+  var g = ctx.createRadialGradient(x, y, 0, x, y, r);
+  g.addColorStop(0, color);
+  g.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(x, y, r, 0, 6.2832); ctx.fill();
+  ctx.globalAlpha = 1;
+}
+
+function sparkle(x, y, size, color, rot) {
+  ctx.save();
+  ctx.translate(x, y); ctx.rotate(rot);
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(0, -size); ctx.quadraticCurveTo(size * 0.12, -size * 0.12, size, 0);
+  ctx.quadraticCurveTo(size * 0.12, size * 0.12, 0, size);
+  ctx.quadraticCurveTo(-size * 0.12, size * 0.12, -size, 0);
+  ctx.quadraticCurveTo(-size * 0.12, -size * 0.12, 0, -size);
+  ctx.fill();
+  ctx.restore();
+}
+
+var time = 0;
+function frame() {
+  time += 0.016;
+  ctx.clearRect(0, 0, W, H);
+
+  for (var i = 0; i < stars.length; i++) {
+    var s = stars[i];
+    if (!reduce) s.t += s.s;
+    ctx.globalAlpha = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(s.t));
+    ctx.fillStyle = "#dfe4ff";
+    ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, 6.2832); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  p += (targetP - p) * (reduce ? 1 : 0.025);
+  if (Math.abs(targetP - p) < 0.0005) p = targetP;
+
+  kmEl.textContent = Math.round(CONFIG.km * (1 - p)) + " km";
+  var cx = W / 2, cy = H * 0.26;
+  var ax0 = W * 0.13, ay0 = H * 0.32, bx0 = W * 0.87, by0 = H * 0.16;
+  var bob = reduce ? 0 : Math.sin(time * 0.9) * 4;
+  var ax = lerp(ax0, cx, p), ay = lerp(ay0, cy, p) + bob;
+  var bx = lerp(bx0, cx, p), by = lerp(by0, cy, p) - bob;
+  var merge = Math.max(0, (p - 0.9) / 0.1);
+
+  if (merge < 1) {
+    ctx.save();
+    ctx.globalAlpha = 0.55 * (1 - merge);
+    ctx.strokeStyle = "#ffd6df";
+    ctx.lineWidth = 1.2;
+    ctx.setLineDash([2, 7]);
+    ctx.lineDashOffset = -time * 14;
+    ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
+    ctx.restore();
+    var pulse = reduce ? 1 : 1 + 0.08 * Math.sin(time * 2);
+    glow(ax, ay, 54 * pulse, "rgba(255,180,194,0.9)", 0.6 * (1 - merge));
+    glow(bx, by, 54 * pulse, "rgba(255,224,160,0.9)", 0.6 * (1 - merge));
+    sparkle(ax, ay, 14 * pulse, "#ffe2e8", time * 0.2);
+    sparkle(bx, by, 14 * pulse, "#fff0c9", -time * 0.2);
+  }
+
+  if (merge > 0) {
+    ctx.save();
+    ctx.globalAlpha = merge;
+    glow(cx, cy, 120, "rgba(255,224,160,0.8)", 0.5);
+    ctx.lineWidth = 4;
+    var g = ctx.createLinearGradient(cx - 30, cy, cx + 30, cy + 30);
+    g.addColorStop(0, "#ffb4c2"); g.addColorStop(1, "#ffe0a0");
+    ctx.strokeStyle = g;
+    ctx.shadowColor = "rgba(255,224,160,0.9)"; ctx.shadowBlur = 18;
+    ctx.beginPath(); ctx.arc(cx, cy + 10, 26, 0, 6.2832); ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = "#ffffff";
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - 34); ctx.lineTo(cx + 9, cy - 24); ctx.lineTo(cx, cy - 14); ctx.lineTo(cx - 9, cy - 24);
+    ctx.closePath(); ctx.fill();
+    sparkle(cx, cy - 24, 22 + (reduce ? 0 : 6 * Math.sin(time * 3)), "#ffffff", 0);
+    ctx.restore();
+  }
+
+  if (!reduce && Math.random() < 0.004) {
+    shooters.push({ x: Math.random() * W * 0.8, y: Math.random() * H * 0.3, life: 1 });
+  }
+  for (var k = shooters.length - 1; k >= 0; k--) {
+    var sh = shooters[k];
+    sh.x += 9; sh.y += 4; sh.life -= 0.025;
+    ctx.strokeStyle = "rgba(255,255,255," + Math.max(sh.life, 0) + ")";
+    ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.moveTo(sh.x, sh.y); ctx.lineTo(sh.x - 46, sh.y - 20); ctx.stroke();
+    if (sh.life <= 0) shooters.splice(k, 1);
+  }
+
+  for (var b = bursts.length - 1; b >= 0; b--) {
+    var q = bursts[b];
+    q.x += q.vx; q.y += q.vy; q.vy += 0.035; q.life -= 0.012;
+    ctx.globalAlpha = Math.max(q.life, 0);
+    ctx.fillStyle = q.c;
+    ctx.beginPath(); ctx.arc(q.x, q.y, q.r, 0, 6.2832); ctx.fill();
+    if (q.life <= 0) bursts.splice(b, 1);
+  }
+  ctx.globalAlpha = 1;
+
+  if (finalYes && bursts.length < 40 && Math.random() < 0.05) fireworks(Math.random() * W, Math.random() * H * 0.5 + 40);
+  requestAnimationFrame(frame);
+}
+
+function fireworks(x, y) {
+  var cols = ["#ffb4c2", "#ffe0a0", "#ffffff", "#ffd1a8"];
+  for (var i = 0; i < 46; i++) {
+    var a = Math.random() * 6.2832, v = Math.random() * 3.6 + 0.8;
+    bursts.push({ x: x, y: y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, r: Math.random() * 1.8 + 0.8, life: 1, c: cols[i % cols.length] });
+  }
+}
+
+/* ===== Som suave (só depois do primeiro toque) ===== */
+function chime(freqs) {
+  if (muted) return;
+  try {
+    if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
+    if (audio.state === "suspended") audio.resume();
+    freqs.forEach(function (f, i) {
+      var o = audio.createOscillator(), g = audio.createGain();
+      o.type = "sine"; o.frequency.value = f;
+      var t = audio.currentTime + i * 0.16;
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(0.07, t + 0.03);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 1.6);
+      o.connect(g); g.connect(audio.destination);
+      o.start(t); o.stop(t + 1.7);
+    });
+  } catch (e) {}
+}
+
+document.getElementById("mute").addEventListener("click", function () {
+  muted = !muted;
+  this.setAttribute("aria-pressed", String(muted));
+  this.textContent = muted ? "Som desligado" : "Som ligado";
+});
+
+/* ===== Conteúdo ===== */
+function el(tag, cls, text) {
+  var n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (text) n.textContent = text;
+  return n;
+}
+function mkBtn(label, primary, onclick) {
+  var b = el("button", "btn" + (primary ? " primary" : ""), label);
+  b.type = "button";
+  b.addEventListener("click", onclick);
+  return b;
+}
+function head(kicker, title, emWord) {
+  var frag = document.createDocumentFragment();
+  frag.appendChild(el("p", "kicker", kicker));
+  var h = el("h1");
+  if (emWord && title.indexOf(emWord) > -1) {
+    var parts = title.split(emWord);
+    h.appendChild(document.createTextNode(parts[0]));
+    h.appendChild(el("em", "", emWord));
+    h.appendChild(document.createTextNode(parts.slice(1).join(emWord)));
+  } else { h.textContent = title; }
+  frag.appendChild(h);
+  return frag;
+}
+
+var PROMISES = [
+  "Atravessar a distância que for preciso, até ela deixar de existir.",
+  "Te escolher de novo nos dias bons e nos dias difíceis.",
+  "Rir com você e de você, nessa ordem.",
+  "Nunca deixar um bom dia sem resposta.",
+  "Ser a sua casa, esteja onde você estiver."
+];
+
+function go(n) {
+  step = n;
+  targetP = TARGETS[n];
+  bar.style.width = (n / (TARGETS.length - 1)) * 100 + "%";
+  render();
+  if (n < 6) chime([523.25, 659.25]);
+}
+
+function render() {
+  card.innerHTML = "";
+  card.style.animation = "none"; card.offsetHeight; card.style.animation = "";
+  var ela = CONFIG.ela, eu = CONFIG.eu;
+  var row = el("div", "row");
+
+  if (step === 0) {
+    card.appendChild(head(ela ? "Para " + ela : "Para você", "Existe uma distância entre nós.", "distância"));
+    card.appendChild(el("p", "", "Eu em Brasília, você em Goiânia. Duas estrelas, cada uma no seu canto. Preparei uma coisa pra você. Leva uns dois minutos e vale usar o som."));
+    row.appendChild(mkBtn("Começar", true, function () { go(1); }));
+  } else if (step === 1) {
+    card.appendChild(head("Primeiro", "A gente se conhece em palavras.", "palavras"));
+    card.appendChild(el("p", "", "Não temos uma foto juntos nem um lugar que seja nosso. Temos mensagens. E foi com elas que você virou uma das melhores partes do meu dia."));
+    row.appendChild(mkBtn("Continuar", true, function () { go(2); }));
+  } else if (step === 2) {
+    card.appendChild(head("Uma confissão", "Eu sei que pulei uma etapa.", "pulei"));
+    card.appendChild(el("p", "", "Pulei o namoro. Não é pressa. É que eu já sei o que eu quero, e prefiro te contar a fingir que estou em dúvida."));
+    row.appendChild(mkBtn("Continuar", true, function () { go(3); }));
+  } else if (step === 3) {
+    card.appendChild(head("Minhas promessas", "Toque nas que você aceita.", "aceita"));
+    var ul = el("ul", "promises");
+    PROMISES.forEach(function (t) {
+      var li = el("li");
+      var b = el("button");
+      b.type = "button";
+      b.setAttribute("aria-pressed", "false");
+      b.appendChild(el("span", "box", "✓"));
+      b.appendChild(el("span", "", t));
+      b.addEventListener("click", function () {
+        var on = b.getAttribute("aria-pressed") === "true";
+        b.setAttribute("aria-pressed", String(!on));
+        if (!on) chime([783.99]);
+      });
+      li.appendChild(b); ul.appendChild(li);
+    });
+    card.appendChild(ul);
+    row.appendChild(mkBtn("Continuar", true, function () { go(4); }));
+  } else if (step === 4) {
+    card.appendChild(head("Uma carta", "Você pediu que eu pedisse direito.", "direito"));
+    [
+      "Você me disse que só aceitaria se eu pedisse direito. Então eu parei, pensei em você e preparei isso com todo o cuidado que eu consegui ter.",
+      "A gente nunca tirou uma foto junto. Nunca dividiu um café, nunca andou lado a lado. Mesmo assim, eu aprendi a te reconhecer em cada mensagem, e isso, pra mim, já é conhecer alguém de verdade.",
+      "Eu não estou te pedindo pra pular o tempo, os encontros e os dias comuns. Estou te pedindo pra construir tudo isso comigo, com o compromisso de quem já decidiu.",
+      "Pedir direito, pra mim, é isso: te olhar de longe, sem garantia nenhuma, e dizer com todas as letras que eu quero você. Não por pressa. Porque eu tenho certeza."
+    ].forEach(function (t) { card.appendChild(el("p", "", t)); });
+    if (eu) card.appendChild(el("p", "sig", "— " + eu));
+    row.appendChild(mkBtn("Continuar", true, function () { go(5); }));
+  } else if (step === 5) {
+    card.appendChild(head("Antes da pergunta", "Ela é sua.", "sua"));
+    card.appendChild(el("p", "", "Qualquer resposta vai ser respeitada, e a gente continua conversando do mesmo jeito. Mas eu não podia deixar de perguntar."));
+    row.appendChild(mkBtn("Estou pronta", true, function () { go(6); }));
+  } else if (step === 6) {
+    card.appendChild(head("A pergunta", ela ? ela + ", quer casar comigo?" : "Quer casar comigo?", "casar"));
+    if (eu) card.appendChild(el("p", "sig", "— " + eu));
+    row.appendChild(mkBtn("Sim", true, sayYes));
+    row.appendChild(mkBtn("Preciso conversar primeiro", false, sayTalk));
+  }
+  card.appendChild(row);
+  card.appendChild(el("p", "toast"));
+}
+
+function sayYes() {
+  finalYes = true;
+  chime([523.25, 659.25, 783.99, 1046.5]);
+  fireworks(W * 0.3, H * 0.2); fireworks(W * 0.7, H * 0.15); fireworks(W * 0.5, H * 0.28);
+  card.innerHTML = "";
+  card.appendChild(head("Você disse", "Sim.", "Sim"));
+  card.appendChild(el("p", "", "Pedido feito do jeito que você queria. Eu vou atravessar essa distância correndo. Agora me manda uma mensagem, porque eu preciso ouvir isso de novo."));
+  var row = el("div", "row");
+  var msg = "Eu disse sim.";
+  var copy = mkBtn("Copiar “" + msg + "”", true, function () {
+    var t = card.querySelector(".toast");
+    function ok() { t.textContent = "Copiado. Agora cola na nossa conversa."; }
+    try {
+      navigator.clipboard.writeText(msg).then(ok, function () { t.textContent = "Escreva: " + msg; });
+    } catch (e) { t.textContent = "Escreva: " + msg; }
+  });
+  row.appendChild(copy);
+  card.appendChild(row);
+  card.appendChild(el("p", "toast"));
+}
+
+function sayTalk() {
+  chime([392, 523.25]);
+  card.innerHTML = "";
+  card.appendChild(head("Tudo bem", "Sem pressa e sem pressão.", "sem pressão"));
+  card.appendChild(el("p", "", "Me chama e a gente conversa, do jeito que sempre conversou. A pergunta fica guardada até você querer responder."));
+  var row = el("div", "row");
+  row.appendChild(mkBtn("Voltar à pergunta", false, function () { go(6); }));
+  card.appendChild(row);
+}
+
+go(0);
+requestAnimationFrame(frame);
+</script>
+
+</body>
+</html>
